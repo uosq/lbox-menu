@@ -3,10 +3,11 @@
 --- version 0.1
 
 ---@class WINCTX
----@field x integer? The 'X' coordinate of the window
----@field y integer? The 'Y' coordinate of the window
----@field name string? The 'name' of thewindow
----@field starty integer? Default is 10. Relative to the window's 'Y' coordinate
+---@field public x integer The 'X' coordinate of the window
+---@field public y integer The 'Y' coordinate of the window
+---@field public name string? The 'name' of thewindow
+---@field public starty integer? Default is 10. Relative to the window's 'Y' coordinate
+---@field order table<integer, table[]> This is here just for the lsp to not complain. Do NOT mess with it
 
 ---@class BUTTONRETURN
 ---@field leftclick boolean Returns true if it was clicked this tick
@@ -17,9 +18,14 @@
 ---@class BUTTONCTX
 ---@field text string? The button's text
 ---@field font Font? The font to be used (default: "TF2 BUILD")
+---@field width integer
+---@field height integer
 
 ---@class MENU
 local menu = {}
+
+---@return WINCTX
+function menu:CreateWindowCtx() end
 
 ---@param ctx WINCTX The context of the window
 --- Starts a new window
