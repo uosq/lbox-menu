@@ -1,39 +1,45 @@
---- made by navet
---- started in 12/06/2025
+---@module "meta"
 
----@param url string
----@return table?
-local function loadurl(url)
-	assert(type(url) == "string", "Url is not a string!")
+--[[
+StartWindow("Main Window")
+	StartSection()
+	Button()
+	EndSection()
+EndWindow()
+]]
 
-	local contents = http.Get(tostring(url))
+---@type MENU
+local menu = {}
 
-	if contents then
-		local succ, func = pcall(load, contents)
-		if succ and func then
-			return func()
-		end
-	end
+local current_context = nil
+local current_y = nil
 
-	return nil
+---@param ctx WINCTX The context of the window
+--- Starts a new window
+function menu:StartWindow(ctx) end
+
+---@return boolean Returns true if it drawed the window correctly
+function menu:EndWindow()
+	return true
 end
 
----@return table?
-local function loadtab(tab)
-	assert(type(tab) == "string", "Tab is not a string!")
+--- Makes a new section
+function menu:StartSection() end
 
-	local formatted_url =
-		string.format("https://raw.githubusercontent.com/uosq/lbox-menu/refs/heads/main/src/tabs/%s.lua", tab)
-
-	return loadurl(formatted_url)
+---@return boolean Returns true if it was drawed correctly
+function menu:EndSection()
+	return true
 end
 
-local tabs = {
-	loadtab("aimbot"),
-	--[[trigger = {},
-	esp = {},
-	radar = {},
-	misc = {},
-	lobby = {}, --- not sure how we should make this
-	configs = {},]]
-}
+---@return BUTTONRETURN Returns conditions of the button
+function menu:Button(callback)
+	return {}
+end
+
+local function DrawMenu() end
+
+local function Unload() end
+
+callbacks.Register("Draw", DrawMenu)
+callbacks.Register("Unload", Unload)
+return menu
