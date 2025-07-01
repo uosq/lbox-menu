@@ -11,6 +11,7 @@
 ---@field public tabs table<integer, {name: string|'', components: table<integer, BUTTON|CHECKBOX>}> The tabs of the window (default: { [1]: {} })
 ---@field public font Font? The font to be used (default: "TF2 BUILD")
 ---@field public header string? The window's title bar text
+---@field public active_tab_index integer The active tab index (default: 1) | Doesn't need to be changed, NMENU handles it for you
 
 ---@class BUTTON
 ---@field public label string|'' The button's text
@@ -50,7 +51,7 @@ function menu:register() end
 ---@return WINDOW
 function menu:make_window() end
 
----@return integer Returns the tab index relative to the current window context
+---@return integer? Returns the tab index relative to the current window context
 ---@param name string
 function menu:make_tab(name) end
 

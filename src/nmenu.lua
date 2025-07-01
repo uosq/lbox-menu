@@ -6,7 +6,7 @@
 -- CONSTANTS AND CONFIGURATION
 -- =============================================================================
 
-local OUTLINE_THICKNESS = 2
+local OUTLINE_THICKNESS = 1
 local TAB_BUTTON_WIDTH = 120
 local TAB_BUTTON_HEIGHT = 25
 local TAB_BUTTON_MARGIN = 2
@@ -34,9 +34,6 @@ local current_window_context = nil
 
 ---@type BUTTON|CHECKBOX|SLIDER
 local current_component = nil
-
----@type integer
-local active_tab_index = 1
 
 ---@type SLIDER?
 local dragging_slider = nil
@@ -132,7 +129,8 @@ local function handle_tab_button_click(window, tab_index)
 	if is_mouse_inside(tab_x, tab_y, tab_x2, tab_y2) then
 		local state, tick = input.IsButtonPressed(E_ButtonCode.MOUSE_LEFT)
 		if state and tick > last_keypress_tick then
-			active_tab_index = tab_index
+			-- Set active tab for THIS specific window (my stupid brain is stupid)
+			window.active_tab_index = tab_index
 			last_keypress_tick = tick
 		end
 		return true
@@ -249,15 +247,15 @@ local function handle_window_drag()
 		not dragging_slider
 		and state
 		and tick > last_keypress_tick
-		and is_mouse_inside(window.x + offset - offset, window.y - HEADER_SIZE, window.x + window.width, window.y)
+		and is_mouse_inside(window.x + offset, window.y - HEADER_SIZE, window.x + window.width, window.y)
 	then
 		last_keypress_tick = tick
 		dragging_window = window
 	end
 
-	if dragging_window then
-		dragging_window.x = dragging_window.x + dx
-		dragging_window.y = dragging_window.y + dy
+	if dragging_window == window then
+		window.x = window.x + dx
+		window.y = window.y + dy
 	end
 end
 
@@ -381,7 +379,8 @@ local function draw_tab_buttons(window)
 	for i, tab in ipairs(window.tabs) do
 		local tab_x = window.x
 		local tab_y = window.y + (i - 1) * (TAB_BUTTON_HEIGHT + TAB_BUTTON_MARGIN)
-		local is_active = (i == active_tab_index)
+		-- Use window-specific active tab index (or 1 if it's a single tab window (no tabs basically))
+		local is_active = (i == (window.active_tab_index or 1))
 		local is_hovered = handle_tab_button_click(window, i)
 
 		-- Draw tab button outline
@@ -531,7 +530,14 @@ local function draw_window()
 		draw.FilledRect(window.x + content_offset, window.y, window.x + window.width, window.y + window.height)
 	end
 
-	-- Draw components from active tab
+	-- Draw components from active tab (use window-specific active tab)
+	local active_tab_index = window.active_tab_index or 1
+	-- Reset active tab if it's out of bounds for this window
+	if active_tab_index > #window.tabs then
+		active_tab_index = 1
+		window.active_tab_index = 1
+	end
+
 	local current_tab = window.tabs[active_tab_index] or window.tabs[1]
 	if current_tab then
 		for _, component in pairs(current_tab.components) do
@@ -542,7 +548,7 @@ local function draw_window()
 			elseif component.type == COMPONENT_TYPES.CHECKBOX then
 				draw_checkbox()
 			elseif component.type == COMPONENT_TYPES.SLIDER then
-				draw_slider() -- Add this line
+				draw_slider()
 			else
 				-- Fallback to button rendering for unknown types
 				draw_button()
@@ -558,10 +564,6 @@ local function draw_all_windows()
 
 	for _, window in ipairs(windows) do
 		current_window_context = window
-		-- Reset active tab if it's out of bounds for this window
-		if active_tab_index > #window.tabs then
-			active_tab_index = 1
-		end
 		draw_window()
 	end
 
@@ -665,6 +667,7 @@ function menu:make_window()
 		width = 0,
 		height = 0,
 		tabs = {},
+		active_tab_index = 1, -- Each window now has its own active tab index
 	}
 
 	table.insert(windows, window)
@@ -727,13 +730,14 @@ function menu:make_slider()
 end
 
 function menu:register()
-	calculate_component_sizes()
+	calculate_component_sizes() --- if we have any component with 0 width & height so they dont waste pc resources drawing nothing
 	callbacks.Register("Draw", draw_id, draw_all_windows)
 end
 
 function menu.unload()
-	package.loaded["nmenu"] = nil
+	menu = nil
 	font = nil
+	print("NMENU Finished unloading") --- fuckin lie
 	callbacks.Unregister("Draw", draw_id)
 end
 
