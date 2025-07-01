@@ -1,3 +1,3 @@
 # WARNING
 
-This is **NOT** a 1:1 copy
+This is a menu library for me and whoever use it (thank you man :heart:)
