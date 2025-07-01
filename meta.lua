@@ -8,7 +8,6 @@
 ---@field public y integer The 'Y' coordinate of the window (default: 0)
 ---@field public width integer The 'width' of the window (default: 0)
 ---@field public height integer The 'height' of the window (default: 0)
----@field public name string|'' The 'name' of the window (default: '')
 ---@field public tabs table<integer, {name: string|'', components: table<integer, BUTTON|CHECKBOX>}> The tabs of the window (default: { [1]: {} })
 ---@field public font Font? The font to be used (default: "TF2 BUILD")
 ---@field public header string? The window's title bar text
