@@ -15,6 +15,8 @@ local COMPONENT_TYPES = {
 	BUTTON = 1,
 	CHECKBOX = 2,
 	SLIDER = 3,
+	DROPDOWN = 4,
+	LISTBOX = 5,
 }
 
 -- =============================================================================
@@ -32,7 +34,7 @@ local windows = {}
 ---@type WINDOW?
 local current_window_context = nil
 
----@type BUTTON|CHECKBOX|SLIDER
+---@type BUTTON|CHECKBOX|SLIDER|DROPDOWN|LISTBOX
 local current_component = nil
 
 ---@type SLIDER?
@@ -154,14 +156,62 @@ local function handle_mouse_click()
 	local x2 = component.x + component.width + window.x + content_offset
 	local y2 = component.y + component.height + window.y
 
-	if is_mouse_inside(x1, y1, x2, y2) then
-		if component.func and state and tick > last_keypress_tick then
-			component.func()
+	if component.type == COMPONENT_TYPES.DROPDOWN then
+		if is_mouse_inside(x1, y1, x2, y2) and state and tick > last_keypress_tick then
+			component.expanded = not component.expanded
 			last_keypress_tick = tick
+			return
 		end
 
-		if input.IsButtonDown(E_ButtonCode.MOUSE_LEFT) then
-			draw.Color(76, 86, 106, 255)
+		if component.expanded then
+			for i, item in ipairs(component.items) do
+				local item_y = y2 + (i - 1) * component.height
+				if is_mouse_inside(x1, item_y, x2, item_y + component.height) and state then
+					component.selected_index = i
+					component.expanded = false
+					if component.func then
+						component.func(i, item)
+					end
+					last_keypress_tick = tick
+					break
+				end
+			end
+		end
+	elseif component.type == COMPONENT_TYPES.LISTBOX then
+		local item_height = 20
+		local content_offset = get_content_area_offset()
+		local listbox_x = window.x + component.x + content_offset
+		local listbox_y = window.y + component.y
+
+		for i, item in ipairs(component.items) do
+			local iy = listbox_y + (i - 1) * item_height
+			if iy + item_height > listbox_y + component.height then
+				break
+			end
+			if
+				is_mouse_inside(listbox_x, iy, listbox_x + component.width, iy + item_height)
+				and state
+				and tick > last_keypress_tick
+			then
+				component.selected_index = i
+				if component.func then
+					component.func(i, item)
+				end
+				last_keypress_tick = tick
+				break
+			end
+		end
+	else
+		if is_mouse_inside(x1, y1, x2, y2) then
+			if component.func and state and tick > last_keypress_tick then
+				---@diagnostic disable-next-line: missing-parameter
+				component.func()
+				last_keypress_tick = tick
+			end
+
+			if input.IsButtonDown(E_ButtonCode.MOUSE_LEFT) then
+				draw.Color(76, 86, 106, 255)
+			end
 		end
 	end
 end
@@ -222,6 +272,7 @@ local function handle_slider_drag()
 
 		-- Call callback if exists
 		if component.func then
+			---@diagnostic disable-next-line: missing-parameter
 			component.func(component.value)
 		end
 	end
@@ -485,6 +536,122 @@ local function draw_slider()
 	draw.Text(slider_x + slider_w - value_tw, slider_y - value_th - 2, value_text)
 end
 
+local function draw_dropdown()
+	local window = current_window_context
+	assert(window, "Window context is nil!")
+
+	local component = current_component
+	local content_offset = get_content_area_offset()
+	local x = window.x + component.x + content_offset
+	local y = window.y + component.y
+
+	-- Draw main dropdown box outline
+	draw.Color(143, 188, 187, 255)
+	draw.FilledRect(
+		x - OUTLINE_THICKNESS,
+		y - OUTLINE_THICKNESS,
+		x + component.width + OUTLINE_THICKNESS,
+		y + component.height + OUTLINE_THICKNESS
+	)
+
+	-- Draw main dropdown box background
+	draw.Color(59, 66, 82, 255)
+	draw.FilledRect(x, y, x + component.width, y + component.height)
+
+	-- Handle mouse interaction - this was missing!
+	handle_mouse_click()
+
+	-- Draw selected item text
+	local selected = component.items[component.selected_index] or ""
+	draw.SetFont(component.font or font)
+	draw.Color(236, 239, 244, 255)
+	local _, text_h = draw.GetTextSize(selected)
+	draw.Text(x + 4, y + (component.height // 2) - (text_h // 2), selected)
+
+	-- Draw dropdown arrow indicator
+	draw.Color(236, 239, 244, 255)
+	local arrow = component.expanded and "^" or "v" --- i wish i could use other characters, but i dont think TF2 BUILD supports emojis
+	local arrow_w, arrow_h = draw.GetTextSize(arrow)
+	draw.Text(x + component.width - arrow_w - 4, y + (component.height // 2) - (arrow_h // 2), arrow)
+
+	-- Draw dropdown items if expanded
+	if component.expanded then
+		for i, item in ipairs(component.items) do
+			local iy = y + component.height + (i - 1) * component.height
+
+			-- Check if mouse is hovering over this item
+			local is_hovered = is_mouse_inside(x, iy, x + component.width, iy + component.height)
+
+			-- Draw item outline
+			draw.Color(143, 188, 187, 255)
+			draw.FilledRect(
+				x - OUTLINE_THICKNESS,
+				iy - OUTLINE_THICKNESS,
+				x + component.width + OUTLINE_THICKNESS,
+				iy + component.height + OUTLINE_THICKNESS
+			)
+
+			-- Draw item background
+			if is_hovered then
+				draw.Color(76, 86, 106, 255) -- Hover color
+			else
+				draw.Color(67, 76, 94, 255) -- Normal dropdown item color
+			end
+			draw.FilledRect(x, iy, x + component.width, iy + component.height)
+
+			-- Draw item text
+			draw.Color(236, 239, 244, 255)
+			draw.Text(x + 4, iy + (component.height // 2) - (text_h // 2), item)
+		end
+	end
+end
+
+local function draw_listbox()
+	local window = current_window_context
+	assert(window, "Window context is nil!")
+
+	local component = current_component
+	local content_offset = get_content_area_offset()
+	local x = window.x + component.x + content_offset
+	local y = window.y + component.y
+	local item_height = 20
+	local state, tick = input.IsButtonPressed(E_ButtonCode.MOUSE_LEFT)
+
+	draw.Color(46, 52, 64, 255)
+	draw.FilledRect(x, y, x + component.width, y + (item_height * #component.items))
+
+	for i, item in ipairs(component.items) do
+		local iy = y + (i - 1) * item_height
+		if iy + item_height > y + component.height then
+			break
+		end
+
+		local is_hovered = is_mouse_inside(x, iy, x + component.width, iy + item_height)
+		local is_selected = (i == component.selected_index)
+
+		if is_hovered then
+			draw.Color(67, 76, 94, 255)
+		elseif is_selected then
+			draw.Color(76, 86, 106, 255)
+		else
+			draw.Color(59, 66, 82, 255)
+		end
+
+		if is_hovered and state and tick > last_keypress_tick then
+			last_keypress_tick = tick
+			component.selected_index = i
+		end
+
+		draw.FilledRect(x, iy, x + component.width, iy + item_height)
+		draw.SetFont(component.font)
+		draw.Color(236, 239, 244, 255)
+		draw.Text(x + 4, iy + 2, item)
+	end
+
+	draw.Color(143, 188, 187, 255)
+	draw.OutlinedRect(x, y, x + component.width, y + (item_height * #component.items))
+end
+
 local function draw_window()
 	local window = current_window_context
 	if not window then
@@ -549,6 +716,10 @@ local function draw_window()
 				draw_checkbox()
 			elseif component.type == COMPONENT_TYPES.SLIDER then
 				draw_slider()
+			elseif component.type == COMPONENT_TYPES.DROPDOWN then
+				draw_dropdown()
+			elseif component.type == COMPONENT_TYPES.LISTBOX then
+				draw_listbox()
 			else
 				-- Fallback to button rendering for unknown types
 				draw_button()
@@ -625,6 +796,41 @@ local function create_slider_component()
 		func = nil, -- Callback function called when value changes
 	}
 	return slider
+end
+
+local function create_dropdown_component()
+	---@type DROPDOWN
+	local dropdown = {
+		type = COMPONENT_TYPES.DROPDOWN,
+		font = font,
+		label = "",
+		x = 0,
+		y = 0,
+		width = 150,
+		height = 20,
+		items = {}, -- List of strings
+		selected_index = 1,
+		expanded = false,
+		func = nil,
+	}
+	return dropdown
+end
+
+local function create_listbox_component()
+	---@type LISTBOX
+	local listbox = {
+		type = COMPONENT_TYPES.LISTBOX,
+		font = font,
+		label = "",
+		x = 0,
+		y = 0,
+		width = 150,
+		height = 100,
+		items = {},
+		selected_index = 1,
+		func = nil,
+	}
+	return listbox
 end
 
 -- =============================================================================
@@ -729,6 +935,24 @@ function menu:make_slider()
 	return make_new_component(slider)
 end
 
+---@return DROPDOWN?
+function menu:make_dropdown()
+	if not current_window_context then
+		return nil
+	end
+	local dropdown = create_dropdown_component()
+	return make_new_component(dropdown)
+end
+
+---@return LISTBOX?
+function menu:make_listbox()
+	if not current_window_context then
+		return nil
+	end
+	local listbox = create_listbox_component()
+	return make_new_component(listbox)
+end
+
 function menu:register()
 	calculate_component_sizes() --- if we have any component with 0 width & height so they dont waste pc resources drawing nothing
 	callbacks.Register("Draw", draw_id, draw_all_windows)
@@ -737,6 +961,7 @@ end
 function menu.unload()
 	menu = nil
 	font = nil
+	package.loaded["nmenu"] = nil
 	print("NMENU Finished unloading") --- fuckin lie
 	callbacks.Unregister("Draw", draw_id)
 end

@@ -8,7 +8,7 @@
 ---@field public y integer The 'Y' coordinate of the window (default: 0)
 ---@field public width integer The 'width' of the window (default: 0)
 ---@field public height integer The 'height' of the window (default: 0)
----@field public tabs table<integer, {name: string|'', components: table<integer, BUTTON|CHECKBOX>}> The tabs of the window (default: { [1]: {} })
+---@field public tabs table<integer, {name: string|'', components: table<integer, BUTTON|CHECKBOX|SLIDER|DROPDOWN|LISTBOX>}> The tabs of the window (default: { [1]: {} })
 ---@field public font Font? The font to be used (default: "TF2 BUILD")
 ---@field public header string? The window's title bar text
 ---@field public active_tab_index integer The active tab index (default: 1) | Doesn't need to be changed, NMENU handles it for you
@@ -28,18 +28,42 @@
 ---@field public height integer The 'height' of the window (default: 20)
 ---@field public label string|'' The text in the checkbox (default: '')
 ---@field public enabled boolean The 'checked' state of the checkbox (default: false)
+---@field public func function? The callback triggered when toggled
 
 ---@class SLIDER
----@field font Font?
----@field height integer
----@field width integer
----@field label string
----@field x integer
----@field y integer
----@field min number
----@field max number
----@field value number
----@field func function?
+---@field public font Font?
+---@field public height integer
+---@field public width integer
+---@field public label string
+---@field public x integer
+---@field public y integer
+---@field public min number
+---@field public max number
+---@field public value number
+---@field public func function?
+
+---@class DROPDOWN
+---@field public font Font? The font used for the dropdown
+---@field public label string|'' The label text (optional)
+---@field public x integer The 'X' coordinate (default: 0)
+---@field public y integer The 'Y' coordinate (default: 0)
+---@field public width integer The 'width' of the dropdown (default: 150)
+---@field public height integer The 'height' of the dropdown (default: 20)
+---@field public items string[] The list of selectable items
+---@field public selected_index integer The currently selected item's index (default: 1)
+---@field public expanded boolean Whether the dropdown is currently expanded (default: false)
+---@field public func fun(index: integer, value: string)? Called when a new item is selected
+
+---@class LISTBOX
+---@field public font Font? The font used for the listbox
+---@field public label string|'' Optional label
+---@field public x integer The 'X' coordinate (default: 0)
+---@field public y integer The 'Y' coordinate (default: 0)
+---@field public width integer The 'width' of the listbox (default: 150)
+---@field public height integer The 'height' of the listbox (default: 100)
+---@field public items string[] The list of selectable items
+---@field public selected_index integer The index of the currently selected item (default: 1)
+---@field public func fun(index: integer, value: string)? Called when an item is selected
 
 ---@class MENU
 local menu = {}
@@ -63,6 +87,12 @@ function menu:make_checkbox() end
 
 ---@return SLIDER?
 function menu:make_slider() end
+
+---@return DROPDOWN?
+function menu:make_dropdown() end
+
+---@return LISTBOX?
+function menu:make_listbox() end
 
 --- Unload function, you should register this as a callback
 function menu.unload() end
