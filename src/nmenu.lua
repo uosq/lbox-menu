@@ -435,7 +435,7 @@ local function draw_tab_buttons(window)
 		local is_hovered = handle_tab_button_click(window, i)
 
 		-- Draw tab button outline
-		draw.Color(136, 192, 208, 255)
+		draw.Color(143, 188, 187, 255)
 		draw.FilledRect(
 			tab_x - OUTLINE_THICKNESS,
 			tab_y - OUTLINE_THICKNESS,
@@ -545,20 +545,35 @@ local function draw_dropdown()
 	local x = window.x + component.x + content_offset
 	local y = window.y + component.y
 
+	draw.SetFont(component.font or font)
+	local label_w, label_h = draw.GetTextSize(component.label)
+
+	--- Uma puta gambiarra
+	--- Mas to com preguiça de pensar em um jeito bom de fazer isso
+
+	local height_offset = 0
+	if component.label and component.label ~= "" then
+		height_offset = label_h + 5
+	end
+
 	-- Draw main dropdown box outline
 	draw.Color(143, 188, 187, 255)
 	draw.FilledRect(
 		x - OUTLINE_THICKNESS,
-		y - OUTLINE_THICKNESS,
+		y - OUTLINE_THICKNESS - height_offset,
 		x + component.width + OUTLINE_THICKNESS,
 		y + component.height + OUTLINE_THICKNESS
 	)
+
+	--- Draw dropdown label
+	draw.Color(236, 239, 244, 255)
+	draw.Text(x + (component.width // 2) - (label_w // 2), y - (height_offset // 2) - (label_h // 2), component.label)
 
 	-- Draw main dropdown box background
 	draw.Color(59, 66, 82, 255)
 	draw.FilledRect(x, y, x + component.width, y + component.height)
 
-	-- Handle mouse interaction - this was missing!
+	-- Handle mouse clicks
 	handle_mouse_click()
 
 	-- Draw selected item text
@@ -570,7 +585,7 @@ local function draw_dropdown()
 
 	-- Draw dropdown arrow indicator
 	draw.Color(236, 239, 244, 255)
-	local arrow = component.expanded and "^" or "v" --- i wish i could use other characters, but i dont think TF2 BUILD supports emojis
+	local arrow = component.expanded and "^" or "v" --- I wish i could use other characters, but i dont think TF2 BUILD supports emojis
 	local arrow_w, arrow_h = draw.GetTextSize(arrow)
 	draw.Text(x + component.width - arrow_w - 4, y + (component.height // 2) - (arrow_h // 2), arrow)
 

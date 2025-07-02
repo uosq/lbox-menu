@@ -4,7 +4,7 @@ local menu = require("nmenu")
 local window = menu:make_window()
 window.x = 16
 window.y = 50
-window.width = 400
+window.width = 500
 window.height = 200
 window.header = "hi mom!"
 
@@ -23,11 +23,16 @@ end
 
 local drop = menu:make_dropdown()
 drop.x = 10
-drop.y = 45
+drop.y = 60
 drop.height = 25
 drop.items = { "hi mom", "hi dad", "hi world!" }
 drop.label = "lololo"
-drop.expanded = false
+
+local drop2 = menu:make_dropdown()
+drop2.x = 120
+drop2.y = 10
+drop2.height = 25
+drop2.items = { "hi guys", "hi you", "hi we" }
 
 menu:make_tab("tab2")
 
